@@ -1,8 +1,8 @@
 # milanuncios
 
-### Python3 web scraper for [milanuncios.com](https.//www.milanuncios.com). 
+### Python3 web scraper for [milanuncios.com](https.//www.milanuncios.com).
 
-#### <center>Only works in Linux environments, only tested in Python3.</center>center>
+#### <center>Only works in Linux environments, only tested in Python3.</center>
 
 Milanuncios doesn't allow to scrap content for their website by usual methods, but it's posible to scrap dinamic content by other formulas. In their [terms of service](https://www.milanuncios.com/condiciones/), they don't specifies what are the conditions for this kind of scraping, but I don't take responsability about how you use this program, this **has been made for purely educational purposes**.
 
@@ -27,8 +27,8 @@ python3 setup.py install
 ```
 
 ### Usage
-[Usage](https://github.com/mondeja/milanuncios/tree/master/docs/english.ipynb) (English version)
-[Uso](https://github.com/mondeja/milanuncios/tree/master/docs/spanish.ipynb) (Versión en español)
+- [Usage](https://github.com/mondeja/milanuncios/tree/master/docs/english.ipynb) (English version)
+- [Uso](https://github.com/mondeja/milanuncios/tree/master/docs/spanish.ipynb) (Versión en español)
 
 
 ### License

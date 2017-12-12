@@ -3,3 +3,7 @@
 
 # Virtualenv
 env/
+
+# Builds and cache
+__pycache__/
+build/
