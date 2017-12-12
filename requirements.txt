@@ -1,0 +1,12 @@
+beautifulsoup4==4.6.0
+bs4==0.0.1
+cachetools==2.0.1
+EasyProcess==0.2.3
+numpy==1.13.3
+pandas==0.21.0
+python-dateutil==2.6.1
+pytz==2017.3
+PyVirtualDisplay==0.2.1
+selenium==3.8.0
+six==1.11.0
+tqdm==4.19.5
