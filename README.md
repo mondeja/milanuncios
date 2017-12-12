@@ -22,6 +22,7 @@ or
 ```
 git clone https://github.com/mondeja/milanuncios.git
 cd milanuncios
+pip3 install -r requirements.txt
 python3 setup.py install
 ```
 
