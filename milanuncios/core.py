@@ -6,6 +6,7 @@
 # Standard libraries
 import os
 import signal
+import psutil
 import time
 import re
 import random
@@ -93,25 +94,10 @@ class MilAnuncios:
     @staticmethod
     def _get_firefox_processes():
         """Internal function to get already opened user firefox processes"""
-        pipeline = Popen(["pgrep", "firefox"], stdout=PIPE, stderr=PIPE)
-        stdout, stderr = pipeline.communicate()
-        procs = stdout.decode("utf-8").split("\n")[:-1]
-        return procs
-
-    def _clean_firefox_processes(self):
-        """Internal function to kill all new firefox processes
-        opened by requests."""
-        procs = self._get_firefox_processes()
-        killone, informed = (False, False)
-        for pid in procs:
-            if pid not in self.firefox_user_processes:
-                killone = True
-                os.kill(int(pid), signal.SIGKILL)
-            if killone and not informed:
-                msg = "Killing Firefox processes for avoid to overload memory... "
-                self.logger.debug(msg)
-                informed = True
-        return True
+        response = []
+        for proc in psutil.process_iter():
+            if "firefox" in proc.name():
+                response.append(int(proc._pid))
 
     def _start_session(self):
         """Internal function to start a virtual session"""
@@ -150,10 +136,6 @@ class MilAnuncios:
             os.kill(int(pid), signal.SIGKILL)
         self._start_session()  # We need to restart session
 
-    def clean(self):
-        """Close browser and kill firefox processes opened by requests"""
-        self._clean_firefox_processes()
-
     def _get_regions(self):
         """Search in milanuncios.com all the regions
         (use regions property for a faster response)"""
@@ -166,7 +148,7 @@ class MilAnuncios:
                     response.append(prov)
             return response
         url = "https://www.milanuncios.com/ofertas-de-empleo/"
-        response = self.__call__(url, parser, clean=True)
+        response = self.__call__(url, parser)
         return response
 
     @property
@@ -203,15 +185,13 @@ class MilAnuncios:
         """Function to get current page source code displaying on browser"""
         return BeautifulSoup(self.browser.page_source, "html.parser")
 
-    def __call__(self, url, callback, clean=False):
+    def __call__(self, url, callback):
         """Main internal function to call all the requests of the scraper
 
         Args:
             url (str): Endpoint to use in the method
             callback (function): Callback that returns a string
                 with the whole page html.
-            clean (bool, optional): Kill process opened by request
-                As default, False.
 
         Returns (function):
              callback(soup)
@@ -242,7 +222,7 @@ class MilAnuncios:
         try:
             response = self.cache["categories"]
         except KeyError:
-            response = self.__call__(self.main_url, parser, clean=True)
+            response = self.__call__(self.main_url, parser)
             return response
 
     def subcategories(self, category):
@@ -283,7 +263,7 @@ class MilAnuncios:
         except KeyError:
             raise ValueError("Category %s not found in milanuncios.com" % category)
         else:
-            return self.__call__(url, parser, clean=True)
+            return self.__call__(url, parser)
 
     def _ads_parser(self, soup):
         """Internal parser function for get all ads in every page"""
@@ -311,6 +291,8 @@ class MilAnuncios:
         Returns:
             pandas.DataFrame
         """
+        self.logger.info("Searching all adverts that contain %s", query)
+
         query = query.replace(" ", "-")
         response = []
         endpoint = "/anuncios/"
@@ -357,6 +339,8 @@ class MilAnuncios:
         Returns:
             pandas.DataFrame
         """
+        self.logger.info("Searcging by category %s", category)
+
         if subcategory:
             try:
                 endpoint = self.cache["subcategories"][subcategory.lower()]

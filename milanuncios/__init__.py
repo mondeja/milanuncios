@@ -4,7 +4,7 @@
 """Milanuncios source"""
 
 __title__ = 'milanuncios'
-__version__ = '0.9.1'
+__version__ = '0.9.11'
 __author__ = 'Alvaro Mondejar Rubio <mondejar1994@gmail.com>'
 __repo__ = 'https://github.com/mondeja/milanuncios'
 __license__ = 'BSD License'
