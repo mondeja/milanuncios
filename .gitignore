@@ -7,3 +7,6 @@ env/
 # Builds and cache
 __pycache__/
 build/
+
+# Log files
+geckodriver.log

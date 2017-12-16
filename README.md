@@ -1,17 +1,18 @@
 # milanuncios
 
-### Python3 web scraper for [milanuncios.com](https.//www.milanuncios.com).
+### Python3 web scraper and automatic ad renovator for [milanuncios.com](https.//www.milanuncios.com).
+### Scraper y autorenovador de anuncios para [milanuncios.com](https.//www.milanuncios.com) en Python3.
 
 #### <center>Only works in Linux environments, only tested in Python3.</center>
 
-Milanuncios doesn't allow to scrap content for their website by usual methods, but it's posible to scrap dinamic content by other formulas. In their [terms of service](https://www.milanuncios.com/condiciones/), they don't specifies what are the conditions for this kind of scraping, but I don't take responsability about how you use this program, this **has been made for purely educational purposes**.
+Milanuncios doesn't allow to scrap content for their website by usual methods, but it's posible to scrap dinamic content by other formulas. In their [terms of service](https://www.milanuncios.com/condiciones/), they don't specifies what are the conditions for this kind of scraping, but **AUTORENOVATION IS STRICTLY FORBBIDEN** so I don't take responsability about how you use this program, this **has been made for purely educational purposes**.
 
-### Requirements
+## Requirements
 - Mozilla Firefox >= 57.0
 - [Geckodriver](https://github.com/mozilla/geckodriver/releases)
 - Linux based environment
 
-### Install
+## Install
 From source use:
 ```
 pip3 install https://github.com/mondeja/milanuncios/archive/master.zip
@@ -26,12 +27,12 @@ pip3 install -r requirements.txt
 python3 setup.py install
 ```
 
-### Usage
+## Usage
 - [Usage](https://github.com/mondeja/milanuncios/tree/master/docs/english.ipynb) (English version)
 - [Uso](https://github.com/mondeja/milanuncios/tree/master/docs/spanish.ipynb) (Versión en español)
 
 
-### License
+## License
 
 Copyright (c) 2017 Álvaro Mondéjar Rubio.
 All rights reserved.
@@ -50,7 +51,7 @@ WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 
-### Buy me a coffee?
+## Buy me a coffee?
 
 If you feel like buying me a coffee (or a beer?), donations are welcome:
 

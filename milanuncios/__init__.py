@@ -4,9 +4,9 @@
 """Milanuncios source"""
 
 __title__ = 'milanuncios'
-__version__ = '0.9.0'
+__version__ = '0.9.1'
 __author__ = 'Alvaro Mondejar Rubio <mondejar1994@gmail.com>'
 __repo__ = 'https://github.com/mondeja/milanuncios'
 __license__ = 'BSD License'
 
-from .core import MilAnuncios
+from .core import MilAnuncios, MilAnunciosLoginError

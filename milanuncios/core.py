@@ -8,54 +8,81 @@ import os
 import signal
 import time
 import re
+import random
+import logging
+import datetime
+from uuid import uuid4
 from subprocess import Popen, PIPE
 
 # External libraries
 from pyvirtualdisplay import Display
-from selenium import webdriver
 from cachetools import Cache
-import pandas as pd
+from pandas import DataFrame
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 
 # Internal modules
-from milanuncios.utils import create_logger
+from milanuncios.utils import (create_logger,
+                               parse_string_to_timedelta)
+
+class MilAnunciosLoginError(RuntimeError):
+    """Exception raised if login fails"""
+    pass
 
 class MilAnuncios:
     """Main Scraper class
 
     Args:
-        time_loading (float, optional): Time to wait until the page is loaded
-            before scrap it. As default, 1.0
+        delay (float, optional): Time to wait until the page is loaded
+            before scrap it (in seconds). As default, 1.5
         timeout (float, optional): Timeout for requests. As default 15
         executable_path (str, optional): Geckodriver executable path.
             As default, "geckodriver" (needs to be in sys.path)
         log_path (str, optional): Geckodriver log path. As default,
             "geckodriver.log"
     """
-    def __init__(self, time_loading=1.3, timeout=15, init_cache=False,
-    	            executable_path="geckodriver", log_path="geckodriver.log"):
+    def __init__(self, delay=1.5, timeout=15, init_cache=False,
+                 executable_path="geckodriver", log_path="geckodriver.log",
+                 cache=Cache(24), logger=create_logger("milanuncios"),
+                 debug=False):
         self.main_url = "https://www.milanuncios.com"
 
         self.timeout = timeout
-        self.time_loading = time_loading
+        self.delay = delay
+        self.debug = debug
+        self.init_cache = init_cache
 
-        self.logger = create_logger("milanuncios")
-        self.cache = Cache(256)
+        self.logger = logger
+        self.cache = cache
 
-        self.browser = webdriver.Firefox(executable_path=executable_path,
-        	                                log_path=log_path)
-        self._initialize_geckodriver()
-        # Save user firefox processes
-        self._user_firefox_procs = self._get_firefox_processes()
+        self._executable_path = executable_path
+        self._log_path = log_path
 
-        if init_cache:
+        # Attributes defined on __enter__
+        self.session = None
+        self.firefox_user_processes = None
+        self.browser = None
+        self.browser_pid = None
+
+        # Account methods
+        self.logged = False
+        self._logged_soup = None
+
+    def __enter__(self):
+        self._start_session()
+        if self.init_cache:
             self._initialize_cache()
+        return self
 
-    def _initialize_geckodriver(self):
-        """Internal function to unitialize geckodriver"""
-        self.browser.set_script_timeout(self.timeout)
-        self.browser.set_page_load_timeout(self.timeout)
+    def __exit__(self, *excs):
+        if excs:   # We are calling like...? ->  MilAnuncios().__exit__()
+            if None not in excs:
+                self.logger.error(excs[2], exc_info=True)
+        if not self.debug:
+            self._end_session()
+        return False
 
     def _initialize_cache(self):
         """Internal function to initialize cache"""
@@ -77,22 +104,54 @@ class MilAnuncios:
         procs = self._get_firefox_processes()
         killone, informed = (False, False)
         for pid in procs:
-            if pid not in self._user_firefox_procs:
+            if pid not in self.firefox_user_processes:
                 killone = True
                 os.kill(int(pid), signal.SIGKILL)
             if killone and not informed:
                 msg = "Killing Firefox processes for avoid to overload memory... "
-                self.logger.info(msg)
+                self.logger.debug(msg)
                 informed = True
+        return True
 
-    def kill_all_firefox(self):
+    def _start_session(self):
+        """Internal function to start a virtual session"""
+        self.session = uuid4()
+
+        # Obtain user processes
+        self.firefox_user_processes = self._get_firefox_processes()
+
+        # pyvirtualdisplay magic happens here
+        display = Display(visible=0, size=(1024, 768))
+        if not self.debug:
+            display.start()
+        else:
+            self.logger.setLevel(logging.DEBUG)
+
+        # selenium browser
+        self.browser = webdriver.Firefox(executable_path=self._executable_path,
+                                         log_path=self._log_path)
+        self.browser.set_script_timeout(self.timeout)
+        self.browser.set_page_load_timeout(self.timeout)
+
+        # Save new process
+        for pid in self._get_firefox_processes():
+            if pid not in self.firefox_user_processes:
+                self.browser_pid = int(pid)
+
+    def _end_session(self):
+        """End scraper session"""
+        self.logged = False
+        os.kill(self.browser_pid, signal.SIGKILL)
+
+    def kill_firefox(self):
         """Function to kill all firefox processes. Util for development
         or if you experiments errors in requests."""
         for pid in self._get_firefox_processes():
             os.kill(int(pid), signal.SIGKILL)
+        self._start_session()  # We need to restart session
 
     def clean(self):
-        """Syntax sugar to kill firefox processes opened by requests"""
+        """Close browser and kill firefox processes opened by requests"""
         self._clean_firefox_processes()
 
     def _get_regions(self):
@@ -107,8 +166,7 @@ class MilAnuncios:
                     response.append(prov)
             return response
         url = "https://www.milanuncios.com/ofertas-de-empleo/"
-        response = self.__call__(url, parser)
-        self.clean()
+        response = self.__call__(url, parser, clean=True)
         return response
 
     @property
@@ -140,29 +198,27 @@ class MilAnuncios:
                 demand_param = "s"
         return demand_param
 
-    def __call__(self, url, parser_fn, clean=False):
+    @property
+    def current_soup(self):
+        """Function to get current page source code displaying on browser"""
+        return BeautifulSoup(self.browser.page_source, "html.parser")
+
+    def __call__(self, url, callback, clean=False):
         """Main internal function to call all the requests of the scraper
 
         Args:
             url (str): Endpoint to use in the method
-            parser_fn (function): Parser callback to obtain neccesary
-                data from the page. The callback return a string
+            callback (function): Callback that returns a string
                 with the whole page html.
             clean (bool, optional): Kill process opened by request
                 As default, False.
 
         Returns (function):
-             parser_fn(soup)
+             callback(soup)
         """
-        # pyvirtualdisplay magic happens here
-        display = Display(visible=0, size=(1024, 768))
-        display.start()
         self.browser.get(url)
-        time.sleep(self.time_loading)
-        soup = BeautifulSoup(self.browser.page_source, "html.parser")
-        response = parser_fn(soup)
-        if clean:
-            self.clean()
+        time.sleep(self.delay)
+        response = callback(self.current_soup)
         return response
 
     @property
@@ -183,11 +239,11 @@ class MilAnuncios:
                 self.cache["categories"] = response
             finally:
                 return list(response.keys())
-
         try:
-            return self.cache["categories"]
+            response = self.cache["categories"]
         except KeyError:
-            return self.__call__(self.main_url, parser, clean=True)
+            response = self.__call__(self.main_url, parser, clean=True)
+            return response
 
     def subcategories(self, category):
         """Obtain all subcategories (and sub-subcategories recursively)
@@ -225,7 +281,7 @@ class MilAnuncios:
         try:
             url = self.cache["categories"][category]
         except KeyError:
-            raise ValueError("Category %s not found in milanuncios.com" % (category))
+            raise ValueError("Category %s not found in milanuncios.com" % category)
         else:
             return self.__call__(url, parser, clean=True)
 
@@ -257,7 +313,7 @@ class MilAnuncios:
         """
         query = query.replace(" ", "-")
         response = []
-        endpoint = "/anuncios"
+        endpoint = "/anuncios/"
 
         # Region filter
         if region:
@@ -282,9 +338,8 @@ class MilAnuncios:
                 self.logger.info("Only %d pages found", (page - 1))
                 break
 
-        self.clean()
         if response:
-            return pd.DataFrame(response, columns=response[0].keys())
+            return DataFrame(response, columns=response[0].keys())
         else:
             return []
 
@@ -333,8 +388,206 @@ class MilAnuncios:
                 self.logger.info("Only %d pages found", (page - 1))
                 break
 
-        self.clean()
         if response:
-            return pd.DataFrame(response, columns=response[0].keys())
+            return DataFrame(response, columns=response[0].keys())
         else:
             return []
+
+    def login(self, email, password, remember=False):
+        """Internal function to login in milanuncios securely"""
+        self.logger.info("Login in milanuncios.com... Email: %s", email)
+
+        def _login():
+            # Input fields
+            email_input = self.browser.find_element_by_id("email")
+            password_input = self.browser.find_element_by_id("contra")
+            remember_input = self.browser.find_element_by_id("rememberme")
+            # Perform actions
+            email_input.send_keys(email)
+            time.sleep(random.uniform(1., 1.8))
+            password_input.send_keys(password)
+            time.sleep(random.uniform(1.5, 1.8))
+            selected = remember_input.is_selected()
+            if selected != remember:
+                remember_input.click()
+            # Submit button
+            submit = self.browser.find_element_by_class_name("submit")
+            submit.click()
+            return True
+
+        def check_login():
+            """Check if login passed"""
+            soup = self.current_soup
+            return (soup.find(class_="cat1") != None, soup)
+
+        # Go to my ads page
+        self.browser.get(self.main_url + "/mis-anuncios/")
+        time.sleep(self.delay)
+
+        # Check if we are logged
+        self.logger.debug("Checking login...")
+        logged, soup = check_login()
+        self.logger.debug("Logged? -> %r", logged)
+
+        # If we aren't logged, try to login 3 times
+        login_attempts = 4
+        login_passed = False
+        while not logged and login_attempts > 0:
+            time.sleep(self.delay)
+            try:
+                login_passed = _login()
+            except NoSuchElementException:  # Hey! We are logging in
+                login_passed = True
+            if login_passed:
+                logged, soup = check_login()
+                self.logger.debug("Logged? -> %r", logged)
+            else:  # This is not secure yet?
+                msg = "Login error, if persists send a mail to mondejar1994@gmail.com"
+                self.logger.warning(msg)
+            if logged:
+                break
+            login_attempts -= 1
+
+        if login_attempts == 0:  # If all attempts fails
+            msg = "Login not posible after %d attemps. Please, check your credentials."
+            self.logger.error(msg)
+            raise MilAnunciosLoginError(msg)
+
+        self.logger.info("Login successfully.")
+        self.logged = True
+        self._logged_soup = soup
+        return True
+
+    def my_ads(self, *args, dataframe=True, _container=False, **kwargs):
+        """Get your adverts
+
+        Args:
+            email (str): Email of your milanuncios account
+            password (str): Password of your milanuncios account
+            remember (bool, optional): Do you want to be remembered
+                in login? False as default
+            dataframe (bool, optional): If True, returns a pandas.DataFrame,
+                otherwise returns a list of dictionaries. As default True
+
+        Returns: pandas.DataFrame / list
+        """
+        if not self.logged:
+            self.login(args[0], args[1], **kwargs)
+        soup = self._logged_soup
+
+        def get_ad_info(container):
+            """Get advert info"""
+            response = {"renovable": False}
+
+            content = container.find(class_="aditem-detail")
+
+            # Get title
+            title_link = content.find(class_="aditem-detail-title")
+            response["title"] = title_link.string
+
+            # Get description and time to expire
+            desc_expire = re.sub(r"<.*?>", "",
+                                 repr(content.find(class_="tx")))
+            desc, expire_string = desc_expire.split("Caduca en ")
+            response["desc"] = desc
+
+            response["href"] = self.main_url + title_link["href"]
+
+            # Get ad's expire time
+            expire = parse_string_to_timedelta(expire_string)
+            response["expire"] = expire
+
+            # Last renew
+            last_renew_string = container.find(class_="x6").string
+            last_renew = parse_string_to_timedelta(last_renew_string)
+            response["last_renew"] = last_renew
+
+            # Has photos?
+            view_photos_div = content.find(class_="vef")
+            if view_photos_div:
+                response["has_photos"] = True
+            else:
+                response["has_photos"] = False
+
+            # If we are renewing ads we need the container
+            if _container:
+                response["container"] = container
+
+            return response
+
+        ads = []
+        for container in soup.find_all(class_="aditem"):
+            # Get ad info
+            ads.append(get_ad_info(container))
+
+        if ads:
+            if dataframe:
+                return DataFrame(ads, columns=ads[0].keys())
+            return ads
+        return []
+
+
+    def renew_ads(self, *args, ads=None, number=None, **kwargs):
+        """Renew ads
+
+        Args:
+            email (str): Email of your milanuncios account
+            password (str): Password of your milanuncios account
+            remember (bool, optional): Do you want to be remembered
+                in login? False as default
+            ads (list, optional): List with all ads title that you want to renew.
+                If None, automatically will be renewed all of these
+                wich can be renovated.
+            number (int, optional): Number of ads maximun to renovate.
+                If you specifies ad titles in ads param, this param
+                will be ignored. As default None.
+
+        Returns (int):
+            Number of ads that were renewed
+        """
+        # Get all ads of my account
+        if not self.logged:
+            all_ads = self.my_ads(args[0], args[1], dataframe=False,
+                                  _container=True, **kwargs)
+        else:
+            all_ads = self.my_ads(dataframe=False, _container=True, **kwargs)
+
+        def renew(container):
+            """Internal function to renew an ad"""
+            footer = container.find(class_="aditem-footer").find("div")
+            # Get renew button
+            renew_button_href = footer.find(class_="icon-renew").parent["href"]
+            renew_button = self.browser.find_element_by_xpath(
+                '//a[@href="%s"]' % renew_button_href)
+            renew_button.click()  # Click renew button
+            time.sleep(self.delay)
+
+            # Change to internal renew iframe
+            iframe = self.browser.find_element_by_id("ifrw")
+            self.browser.switch_to.frame(iframe)
+            # Get confirm renew button
+            confirm_renew_button = self.browser.find_element_by_id("lren")
+            confirm_renew_button.click()
+            time.sleep(random.uniform(.5, .8))
+            return True
+
+        minimun_time_between_renews = datetime.timedelta(hours=24)
+
+        counter = 0
+        for advert in all_ads:
+            renovated = False
+            # Is renovable?
+            if advert["last_renew"] > minimun_time_between_renews:
+                if ads:
+                    if advert["title"] in ads or advert["title"].upper() in ads:
+                        renovated = renew(advert["container"])
+                else:
+                    renovated = renew(advert["container"])
+            if renovated:
+                counter += 1
+                if not ads:
+                    if number:
+                        if number <= counter:
+                            break
+
+        return counter
