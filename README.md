@@ -31,6 +31,14 @@ python3 setup.py install
 - [Usage](https://github.com/mondeja/milanuncios/tree/master/docs/english.ipynb) (English version)
 - [Uso](https://github.com/mondeja/milanuncios/tree/master/docs/spanish.ipynb) (Versión en español)
 
+## Contribute
+
+- Issue Tracker: https://github.com/mondeja/milanuncios/issues
+- Source Code: https://github.com/mondeja/milanuncios
+
+## Support
+
+If you are having issues, please let me know (mondejar1994@gmail.com).
 
 ## License
 
