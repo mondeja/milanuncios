@@ -3,14 +3,13 @@
 ### Python3 web scraper and automatic ad renovator for [milanuncios.com](https.//www.milanuncios.com).
 ### Scraper y autorenovador de anuncios para [milanuncios.com](https.//www.milanuncios.com) en Python3.
 
-#### <center>Only works in Linux environments, only tested in Python3.</center>
-
 Milanuncios doesn't allow to scrap content for their website by usual methods, but it's posible to scrap dinamic content by other formulas. In their [terms of service](https://www.milanuncios.com/condiciones/), they don't specifies what are the conditions for this kind of scraping, but **AUTORENOVATION IS STRICTLY FORBBIDEN** so I don't take responsability about how you use this program, this **has been made for purely educational purposes**.
+
+I'dont know if works in Windows Mac or Python2, only tested in Linux and Python3.
 
 ## Requirements
 - Mozilla Firefox >= 57.0
 - [Geckodriver](https://github.com/mozilla/geckodriver/releases)
-- Linux based environment
 
 ## Install
 From source use:
