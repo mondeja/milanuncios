@@ -8,7 +8,7 @@ with open('requirements.txt') as f:
 
 setup(
     name = 'milanuncios',
-    version = '0.9.11',
+    version = '0.9.12',
     url = 'https://github.com/mondeja/milanuncios',
     download_url = 'https://github.com/mondeja/milanuncios/archive/master.zip',
     author = 'Alvaro Mondejar <mondejar1994@gmail.com>',
