@@ -98,6 +98,7 @@ class MilAnuncios:
         for proc in psutil.process_iter():
             if "firefox" in proc.name():
                 response.append(int(proc._pid))
+        return response
 
     def _start_session(self):
         """Internal function to start a virtual session"""
