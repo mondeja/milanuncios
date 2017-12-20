@@ -49,13 +49,6 @@ class TestWebScraper(unittest.TestCase):
             self.ma.logger.debug("Firefox processes opened: %r",
                                  self.ma.firefox_user_processes)
 
-    # ===   PROCESSES TESTS   ===
-    def test__get_firefox_processes(self):
-        self.assertGreater(len(self.ma.firefox_user_processes), 0)
-
-    def test__clean_firefox_processes(self):
-        self.ma._clean_firefox_processes()
-
     # ===   INFO TESTS   ===
     def test_regions(self):
         collect_regions = self.ma._get_regions()

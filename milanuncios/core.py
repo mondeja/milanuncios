@@ -12,13 +12,13 @@ import re
 import random
 import logging
 import datetime
+import platform
 from uuid import uuid4
 from subprocess import Popen, PIPE
 
 # External libraries
 from pyvirtualdisplay import Display
 from cachetools import Cache
-from pandas import DataFrame
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from selenium import webdriver
@@ -43,11 +43,13 @@ class MilAnuncios:
             As default, "geckodriver" (needs to be in sys.path)
         log_path (str, optional): Geckodriver log path. As default,
             "geckodriver.log"
+        firefox_binary (str, optional): Firefox binary path (used if you
+            are running on RaspberryPi). As default "/usr/bin/firefox"
     """
     def __init__(self, delay=1.5, timeout=15, init_cache=False,
                  executable_path="geckodriver", log_path="geckodriver.log",
                  cache=Cache(24), logger=create_logger("milanuncios"),
-                 debug=False):
+                 debug=False, firefox_binary="/usr/bin/firefox"):
         self.main_url = "https://www.milanuncios.com"
 
         self.timeout = timeout
@@ -60,6 +62,7 @@ class MilAnuncios:
 
         self._executable_path = executable_path
         self._log_path = log_path
+        self._firefox_binary = firefox_binary
 
         # Attributes defined on __enter__
         self.session = None
@@ -100,6 +103,17 @@ class MilAnuncios:
                 response.append(int(proc._pid))
         return response
 
+    def _start_in_raspberry(self):
+        """Internal function to start session if we are running
+        on RaspberryPi. You need to install iceweasel and download
+        geckodriver version 0.16.0"""
+        msg = "Initializing driver for RaspberryPi. Firefox binary path: %s"
+        self.logger.info(msg, self._firefox_binary)
+        caps = webdriver.DesiredCapabilities().FIREFOX
+        caps["marionette"] = False
+        binary = webdriver.firefox.firefox_binary.FirefoxBinary(self._firefox_binary)
+        return webdriver.Firefox(firefox_binary=binary)
+
     def _start_session(self):
         """Internal function to start a virtual session"""
         self.session = uuid4()
@@ -115,8 +129,11 @@ class MilAnuncios:
             self.logger.setLevel(logging.DEBUG)
 
         # selenium browser
-        self.browser = webdriver.Firefox(executable_path=self._executable_path,
-                                         log_path=self._log_path)
+        if platform.node() == "raspberrypi":
+            self.browser = self._start_in_raspberry()
+        else:
+            self.browser = webdriver.Firefox(executable_path=self._executable_path,
+                                             log_path=self._log_path)
         self.browser.set_script_timeout(self.timeout)
         self.browser.set_page_load_timeout(self.timeout)
 
@@ -292,6 +309,7 @@ class MilAnuncios:
         Returns:
             pandas.DataFrame
         """
+        from pandas import DataFrame
         self.logger.info("Searching all adverts that contain %s", query)
 
         query = query.replace(" ", "-")
@@ -340,6 +358,7 @@ class MilAnuncios:
         Returns:
             pandas.DataFrame
         """
+        from pandas import DataFrame
         self.logger.info("Searcging by category %s", category)
 
         if subcategory:
@@ -456,6 +475,8 @@ class MilAnuncios:
 
         Returns: pandas.DataFrame / list
         """
+        if dataframe:
+            from pandas import DataFrame
         if not self.logged:
             self.login(args[0], args[1], **kwargs)
         soup = self._logged_soup
