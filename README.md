@@ -26,9 +26,11 @@ pip3 install -r requirements.txt
 python3 setup.py install
 ```
 
+#### [Install on RaspberryPi](https://github.com/mondeja/milanuncios/tree/master/docs/install/raspberrypi.md)
+
 ## Usage
-- [Usage](https://github.com/mondeja/milanuncios/tree/master/docs/english.ipynb) (English version)
-- [Uso](https://github.com/mondeja/milanuncios/tree/master/docs/spanish.ipynb) (Versión en español)
+- [Usage](https://github.com/mondeja/milanuncios/tree/master/docs/usage/english.ipynb) (English version)
+- [Uso](https://github.com/mondeja/milanuncios/tree/master/docs/usage/spanish.ipynb) (Versión en español)
 
 ## Contribute
 

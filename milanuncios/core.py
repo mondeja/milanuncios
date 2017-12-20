@@ -33,7 +33,7 @@ class MilAnunciosLoginError(RuntimeError):
     pass
 
 class MilAnuncios:
-    """Main Scraper class
+    """Main Scraper class, used as context
 
     Args:
         delay (float, optional): Time to wait until the page is loaded
@@ -45,11 +45,15 @@ class MilAnuncios:
             "geckodriver.log"
         firefox_binary (str, optional): Firefox binary path (used if you
             are running on RaspberryPi). As default "/usr/bin/firefox"
+        display (bool, optional): Display web browser navigation
+            on real time, useful for debug (doesn't work on RaspberryPi).
+            As default False
     """
     def __init__(self, delay=1.5, timeout=15, init_cache=False,
                  executable_path="geckodriver", log_path="geckodriver.log",
                  cache=Cache(24), logger=create_logger("milanuncios"),
-                 debug=False, firefox_binary="/usr/bin/firefox"):
+                 debug=False, firefox_binary="/usr/bin/firefox",
+                 display=False):
         self.main_url = "https://www.milanuncios.com"
 
         self.timeout = timeout
@@ -58,6 +62,8 @@ class MilAnuncios:
         self.init_cache = init_cache
 
         self.logger = logger
+        if self.debug:
+            self.logger.setLevel(logging.DEBUG)
         self.cache = cache
 
         self._executable_path = executable_path
@@ -69,6 +75,8 @@ class MilAnuncios:
         self.firefox_user_processes = None
         self.browser = None
         self.browser_pid = None
+
+        self.display = display
 
         # Account methods
         self.logged = False
@@ -108,7 +116,7 @@ class MilAnuncios:
         on RaspberryPi. You need to install iceweasel and download
         geckodriver version 0.16.0"""
         msg = "Initializing driver for RaspberryPi. Firefox binary path: %s"
-        self.logger.info(msg, self._firefox_binary)
+        self.logger.debug(msg, self._firefox_binary)
         caps = webdriver.DesiredCapabilities().FIREFOX
         caps["marionette"] = False
         binary = webdriver.firefox.firefox_binary.FirefoxBinary(self._firefox_binary)
@@ -122,11 +130,9 @@ class MilAnuncios:
         self.firefox_user_processes = self._get_firefox_processes()
 
         # pyvirtualdisplay magic happens here
-        display = Display(visible=0, size=(1024, 768))
-        if not self.debug:
-            display.start()
-        else:
-            self.logger.setLevel(logging.DEBUG)
+        visible = 1 if self.display == True and platform.node() != "raspberrypi" else 0
+        display = Display(visible=visible, size=(1024, 768))
+        display.start()
 
         # selenium browser
         if platform.node() == "raspberrypi":
@@ -573,8 +579,10 @@ class MilAnuncios:
             self.browser.switch_to.frame(iframe)
             # Get confirm renew button
             confirm_renew_button = self.browser.find_element_by_id("lren")
-            confirm_renew_button.click()
-            time.sleep(random.uniform(.5, .8))
+            confirm_renew_button.click()  # Click renew
+            time.sleep(1)  # Go to my ads page again
+            self.browser.get(self.main_url + "/mis-anuncios/")
+            time.sleep(self.delay)
             return True
 
         minimun_time_between_renews = datetime.timedelta(hours=24)
