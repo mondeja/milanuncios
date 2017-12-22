@@ -125,6 +125,7 @@ class MilAnuncios:
     def _start_session(self):
         """Internal function to start a virtual session"""
         self.session = uuid4()
+        self.logger.debug("Starting session %s...", self.session)
 
         # Obtain user processes
         self.firefox_user_processes = self._get_firefox_processes()
@@ -230,6 +231,7 @@ class MilAnuncios:
         """Obtains all main categories from home page
 
         Returns: list"""
+        self.logger.debug("Obtaining main categories...")
         def parser(soup):
             """Categories parser"""
             response = {}
@@ -258,6 +260,7 @@ class MilAnuncios:
 
         Returns: list
         """
+        self.logger.debug("Obtaining subcategories for %s category", category)
         def parser(soup):
             """Subcategories parser"""
             response = {}
@@ -342,13 +345,12 @@ class MilAnuncios:
             new_ads = self.__call__(url, self._ads_parser)
             response += new_ads
             if not new_ads:
-                self.logger.info("Only %d pages found", (page - 1))
+                self.logger.info("%d pages found", (page - 1))
                 break
 
         if response:
             return DataFrame(response, columns=response[0].keys())
-        else:
-            return []
+        return []
 
     def search_category(self, category, subcategory=None, pages=1,
                         region=None, offer=True, demand=True):
@@ -365,7 +367,7 @@ class MilAnuncios:
             pandas.DataFrame
         """
         from pandas import DataFrame
-        self.logger.info("Searcging by category %s", category)
+        self.logger.info("Searching by category: %s", category)
 
         if subcategory:
             try:
@@ -395,17 +397,16 @@ class MilAnuncios:
             new_ads = self.__call__(_url, self._ads_parser)
             response += new_ads
             if not new_ads:
-                self.logger.info("Only %d pages found", (page - 1))
+                self.logger.info("%d pages found", (page - 1))
                 break
 
         if response:
             return DataFrame(response, columns=response[0].keys())
-        else:
-            return []
+        return []
 
     def login(self, email, password, remember=False):
         """Internal function to login in milanuncios securely"""
-        self.logger.info("Login in milanuncios.com... Email: %s", email)
+        self.logger.info("Trying to login in milanuncios.com... Email: %s", email)
 
         def _login():
             # Input fields
@@ -487,6 +488,8 @@ class MilAnuncios:
             self.login(args[0], args[1], **kwargs)
         soup = self._logged_soup
 
+        self.logger.info("Retrieving your ads")
+
         def get_ad_info(container):
             """Get advert info"""
             response = {"renovable": False}
@@ -564,6 +567,11 @@ class MilAnuncios:
         else:
             all_ads = self.my_ads(dataframe=False, _container=True, **kwargs)
 
+        if ads:
+            self.logger.debug("Renewing ads %s", str(ads))
+        else:
+            self.logger.debug("Renewing all ads")
+
         def renew(container):
             """Internal function to renew an ad"""
             footer = container.find(class_="aditem-footer").find("div")
@@ -588,13 +596,17 @@ class MilAnuncios:
         minimun_time_between_renews = datetime.timedelta(hours=24)
 
         counter = 0
+        matchs = {"n": 0, "ads": []}
         for advert in all_ads:
             renovated = False
             # Is renovable?
             if advert["last_renew"] > minimun_time_between_renews:
                 if ads:
                     if advert["title"] in ads or advert["title"].upper() in ads:
+                        self.logger.info("Ad %s found", advert["title"].upper())
                         renovated = renew(advert["container"])
+                        matchs["n"] += 1
+                        matchs["ads"].append(advert["title"])
                 else:
                     renovated = renew(advert["container"])
             if renovated:
@@ -604,4 +616,17 @@ class MilAnuncios:
                         if number <= counter:
                             break
 
+        # Notify if any ad does not match
+        if ads:
+            if matchs["n"] < len(ads):
+                self.logger.warning("%d ads not found:",
+                                    len(ads) - matchs["n"])
+                for ad in ads:
+                    if ad not in matchs["ads"]:
+                        self.logger.warning(ad)
+
+        self.logger.debug("%d adverts renovated",  counter)
+        if renovated < len(all_ads):
+            self.logger.warning("%d adverts were not renovated",
+                                len(all_ads) - renotaved)
         return counter
