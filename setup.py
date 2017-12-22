@@ -3,8 +3,6 @@
 
 from distutils.core import setup
 
-with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
 
 setup(
     name = 'milanuncios',
@@ -18,5 +16,4 @@ setup(
     description = 'Python3 web scraper for milanuncios.com.',
     long_description = open('README.md','r').read(),
     keywords = ['milanuncios', 'anuncios', 'segunda mano', 'scraper', 'dinamic scraping', 'python', 'big data'],
-    install_requires = requirements
 )

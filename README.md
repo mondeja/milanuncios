@@ -30,7 +30,7 @@ python3 setup.py install
 
 ## Usage
 - [Usage](https://github.com/mondeja/milanuncios/tree/master/docs/usage/english.ipynb) (English version)
-- [Uso](https://github.com/mondeja/milanuncios/tree/master/docs/usage/spanish.ipynb) (Spanish version)
+- [Uso](https://github.com/mondeja/milanuncios/tree/master/docs/usage/spanish.ipynb) (Versión en español)
 
 ## Contribute
 
