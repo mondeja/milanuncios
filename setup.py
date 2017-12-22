@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 from distutils.core import setup
 
+BASEDIR = os.path.dirname(__file__)
+
+with open(os.path.join(BASEDIR, 'requirements.txt')) as f:
+    requirements = f.readlines()
+
+with open(os.path.join(BASEDIR, 'README.md')) as f:
+    readme = f.read()
 
 setup(
     name = 'milanuncios',
@@ -14,6 +22,7 @@ setup(
     license = 'BSD License',
     packages = ['milanuncios'],
     description = 'Python3 web scraper for milanuncios.com.',
-    long_description = open('README.md','r').read(),
+    long_description = readme,
     keywords = ['milanuncios', 'anuncios', 'segunda mano', 'scraper', 'dinamic scraping', 'python', 'big data'],
+    install_requires = requirements
 )

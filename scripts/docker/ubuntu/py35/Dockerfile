@@ -13,7 +13,7 @@ RUN apt-get install wget git xvfb -y
 RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz
 RUN tar -xvzf geckodriver-v0.19.1-linux64.tar.gz
 RUN mv geckodriver /usr/local/bin/geckodriver
-RUN git clone https://github.com/mondeja/milanuncios.git && cd milanuncios
+RUN git clone -b staging https://github.com/mondeja/milanuncios.git && cd milanuncios
 RUN echo "Directorio actual:"
 RUN echo $PWD
 RUN pip3 install -r /milanuncios/requirements.txt
