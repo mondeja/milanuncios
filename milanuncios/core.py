@@ -461,7 +461,7 @@ class MilAnuncios:
                 break
             attempts -= 1
 
-        if login_attempts == 0:  # If all attempts fails
+        if attempts == 0:  # If all attempts fails
             msg = "Login not posible after %d attemps. Please, check your credentials."
             self.logger.error(msg)
             raise MilAnunciosLoginError(msg)
