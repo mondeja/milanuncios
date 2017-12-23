@@ -404,8 +404,11 @@ class MilAnuncios:
             return DataFrame(response, columns=response[0].keys())
         return []
 
-    def login(self, email, password, remember=False):
-        """Internal function to login in milanuncios securely"""
+    def login(self, email, password, remember=False, attempts=5):
+        """Login in milanuncios to perform actions on your account
+
+
+        """
         self.logger.info("Trying to login in milanuncios.com... Email: %s", email)
 
         def _login():
@@ -535,6 +538,8 @@ class MilAnuncios:
             # Get ad info
             ads.append(get_ad_info(container))
 
+        self.logger.debug("%d ads published in your account", len(ads))
+
         if ads:
             if dataframe:
                 return DataFrame(ads, columns=ads[0].keys())
@@ -567,10 +572,14 @@ class MilAnuncios:
         else:
             all_ads = self.my_ads(dataframe=False, _container=True, **kwargs)
 
+        if not all_ads:
+            self.logger.warning("0 ads found. Maybe yo don't have ads pusblished?")
+            return
+
         if ads:
-            self.logger.debug("Renewing ads %s", str(ads))
+            self.logger.debug("Renewing %d ads: %s" % (len(ads), str(ads)))
         else:
-            self.logger.debug("Renewing all ads")
+            self.logger.debug("Renewing all ads (%d)", len(all_ads))
 
         def renew(container):
             """Internal function to renew an ad"""
@@ -589,44 +598,56 @@ class MilAnuncios:
             confirm_renew_button = self.browser.find_element_by_id("lren")
             confirm_renew_button.click()  # Click renew
             time.sleep(1)  # Go to my ads page again
-            self.browser.get(self.main_url + "/mis-anuncios/")
-            time.sleep(self.delay)
+            return True
+
+        def count_new_ad(stats):
+            stats["ads_found"]["n"] += 1
+            stats["ads_found"]["ads"].append(advert["title"])
             return True
 
         minimun_time_between_renews = datetime.timedelta(hours=24)
 
-        counter = 0
-        matchs = {"n": 0, "ads": []}
-        for advert in all_ads:
-            renovated = False
-            # Is renovable?
-            if advert["last_renew"] > minimun_time_between_renews:
-                if ads:
-                    if advert["title"] in ads or advert["title"].upper() in ads:
-                        self.logger.info("Ad %s found", advert["title"].upper())
-                        renovated = renew(advert["container"])
-                        matchs["n"] += 1
-                        matchs["ads"].append(advert["title"])
-                else:
-                    renovated = renew(advert["container"])
-            if renovated:
-                counter += 1
-                if not ads:
-                    if number:
-                        if number <= counter:
-                            break
+        stats = {
+            "n_renews": 0,
+            "ads_to_renew": {
+                "n": len(all_ads) if not ads else len(ads),
+                "ads": all_ads if not ads else ads,
+            },
+            "ads_found": {  # Check if there are title errors in ads param
+                "n": 0,
+                "ads": []
+            }
+        }
 
-        # Notify if any ad does not match
+        for advert in all_ads:
+            to_renew, renovated = (False, False)
+            if ads:
+                if advert["title"] in ads or advert["title"].upper() in ads:
+                    to_renew = count_new_ad(stats)
+                    stats["ads_found"]["n"] += 1
+                    stats["ads_found"]["ads"].append(advert["title"])
+            else:
+                to_renew = count_new_ad(stats)
+
+            if to_renew and advert["last_renew"] > minimun_time_between_renews:
+                renovated = renew(advert["container"])
+            if renovated:
+                stats["n_renews"] += 1
+
+        self.logger.info("%d adverts renovated",  stats["n_renews"])
+
         if ads:
-            if matchs["n"] < len(ads):
+            # Check if all titles on ads list param were found
+            if stats["ads_found"]["n"] < stats["ads_to_renew"]["n"]:
                 self.logger.warning("%d ads not found:",
-                                    len(ads) - matchs["n"])
+                    stats["ads_to_renew"]["n"] - stats["ads_found"]["n"])
                 for ad in ads:
-                    if ad not in matchs["ads"]:
+                    if ad not in stats["ads_found"]["ads"]:
                         self.logger.warning(ad)
 
-        self.logger.debug("%d adverts renovated",  counter)
-        if renovated < len(all_ads):
-            self.logger.warning("%d adverts were not renovated",
-                                len(all_ads) - renotaved)
-        return counter
+        # Check number of ads not renewed (only for debug)
+        if stats["n_renews"] < stats["ads_to_renew"]["n"]:
+            self.logger.debug("%d adverts were not renovated",
+                               stats["ads_to_renew"]["n"] - stats["n_renews"])
+
+        return stats["n_renews"]
