@@ -443,10 +443,9 @@ class MilAnuncios:
         logged, soup = check_login()
         self.logger.debug("Logged? -> %r", logged)
 
-        # If we aren't logged, try to login 3 times
-        login_attempts = 4
+        # If we aren't logged, try to login X times (attempts param)
         login_passed = False
-        while not logged and login_attempts > 0:
+        while not logged and attempts > 0:
             time.sleep(self.delay)
             try:
                 login_passed = _login()
@@ -460,7 +459,7 @@ class MilAnuncios:
                 self.logger.warning(msg)
             if logged:
                 break
-            login_attempts -= 1
+            attempts -= 1
 
         if login_attempts == 0:  # If all attempts fails
             msg = "Login not posible after %d attemps. Please, check your credentials."
