@@ -12,7 +12,7 @@ os:
 addons:
   apt:
     packages:
-      - "python3-pip"
+      - "python3-pip" 
 
 
 before_install:
