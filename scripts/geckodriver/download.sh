@@ -39,6 +39,7 @@ then
   if [ `uname -m` == "x86_64" ]
   then
     wget $Linux86_64
+    tar -xvf geckodriver-v0.19.1-linux64.tar.gz
   fi
 
 fi
