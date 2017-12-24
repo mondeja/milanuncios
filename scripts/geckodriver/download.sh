@@ -39,9 +39,10 @@ then
   # 64bit architecture?
   if [ `uname -m` == "x86_64" ]
   then
-    wget $Linux86_64
-    tar -xvf geckodriver-v0.19.1-linux64.tar.gz
-
+    wget -N $Linux86_64 P ~/  # Download driver and store at home
+    tar -xvf ~/geckodriver-v0.19.1-linux64.tar.gz
+    rm ~/geckodriver-v0.19.1-linux64.tar.gz
+    ls ~/
   fi
 
 fi
@@ -49,13 +50,11 @@ fi
 # If we are in TravisCI, geckodriver needs to be in path
 if [ $travis -eq 1 ]
 then
-  echo "Adding $PWD/geckodriver to PATH"
-  export PATH=$PATH:$PWD/geckodriver
+  sudo mv -f ~/geckodriver /usr/local/share/geckodriver
+  sudo chmod +x /usr/local/share/geckodriver
+  sudo ln -s /usr/local/share/geckodriver /usr/local/bin/geckodriver
 fi
 
-ls
+echo "Where is geckodriver?"
+whereis geckodriver
 
-echo "PATH:"
-echo $PATH
-
-#if [[ $("uname -m") == "x86_64" ]]; then wget $linux64
