@@ -10,7 +10,7 @@ os:
   - linux
 
 before_install:
-  - ./scripts/geckodriver/download.sh travis
+  - bash scripts/geckodriver/download.sh travis
 
 install:
   - pip install -r requirements.txt
