@@ -49,10 +49,13 @@ fi
 # If we are in TravisCI, geckodriver needs to be in path
 if [ $travis -eq 1 ]
 then
+  echo "Adding $PWD/geckodriver to PATH"
   export PATH=$PATH:$PWD/geckodriver
 fi
 
 ls
 
+echo "PATH:"
+echo $PATH
 
 #if [[ $("uname -m") == "x86_64" ]]; then wget $linux64
