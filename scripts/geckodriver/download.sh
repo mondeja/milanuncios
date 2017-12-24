@@ -3,7 +3,7 @@
 # Script to get neccesary version of geckodriver
 # across multiples OS. Need wget installed yet
 
-
+travis=1
 if [ -z $1 ]  # travis is not first command?
 then
   travis=0

@@ -1,3 +1,5 @@
+sudo: required
+
 language: python
 
 python:
@@ -13,7 +15,7 @@ addons:
       - wget
 
 before_install:
-  - uname -a
+  - bash scripts/geckodriver/download.sh travis
 
 install:
   - pip install -r requirements.txt
