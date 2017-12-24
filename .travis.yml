@@ -13,7 +13,7 @@ before_install:
   - sudo bash scripts/geckodriver/download.sh travis
 
 install:
-  - sudo pip3 install -r requirements.txt
+  - sudo pip install -r requirements.txt
   - sudo python3 setup.py install
 
 before_script:
