@@ -49,8 +49,6 @@ fi
 # If we are in TravisCI, geckodriver needs to be in path
 if [ $travis -eq 1 ]
 then
-  mkdir geckodriver
-  mv geckodriver geckodriver/geckodriver
   export PATH=$PATH:$PWD/geckodriver
 fi
 
