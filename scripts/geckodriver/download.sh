@@ -30,7 +30,7 @@ if [ $OS == "linux" ]
 then
 
   # Install wget?
-  if [ $travis -eq 0]  # If we are not in travis, try it
+  if [ $travis -eq 0 ]  # If we are not in travis, try it
   then
     sudo apt-get install wget
   fi
@@ -44,7 +44,7 @@ then
 fi
 
 
-
+ls
 
 
 #if [[ $("uname -m") == "x86_64" ]]; then wget $linux64
