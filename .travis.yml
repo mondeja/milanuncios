@@ -9,11 +9,17 @@ python:
 os:
   - linux
 
+addons:
+  apt:
+    packages:
+      - "python3-pip"
+
+
 before_install:
   - sudo bash scripts/geckodriver/download.sh travis
 
 install:
-  - sudo pip install -r requirements.txt
+  - sudo pip3 install -r requirements.txt
   - sudo python3 setup.py install
 
 before_script:
