@@ -13,7 +13,7 @@ addons:
       - wget
 
 before_install:
-  - echo uname -a
+  - uname -a
 
 install:
   - pip install -r requirements.txt
