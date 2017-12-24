@@ -25,6 +25,7 @@ case "$OSTYPE" in
 esac
 
 
+
 # Linux environments
 if [ $OS == "linux" ]
 then
@@ -40,10 +41,18 @@ then
   then
     wget $Linux86_64
     tar -xvf geckodriver-v0.19.1-linux64.tar.gz
+
   fi
 
 fi
 
+# If we are in TravisCI, geckodriver needs to be in path
+if [ $travis -eq 1 ]
+then
+  mkdir geckodriver
+  mv geckodriver geckodriver/geckodriver
+  export PATH=$PATH:$PWD/geckodriver
+fi
 
 ls
 
