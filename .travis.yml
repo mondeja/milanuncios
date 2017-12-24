@@ -13,8 +13,8 @@ before_install:
   - sudo bash scripts/geckodriver/download.sh travis
 
 install:
-  - sudo pip install -r requirements.txt
-  - sudo python setup.py install
+  - sudo pip3 install -r requirements.txt
+  - sudo python3 setup.py install
 
 before_script:
   # https://docs.travis-ci.com/user/gui-and-headless-browsers/#Using-xvfb-to-Run-Tests-That-Require-a-GUI
@@ -24,7 +24,7 @@ before_script:
 
 
 script:
-  - sudo python test/test.py
+  - sudo python3 test/test.py
 
 branches:
   only:
