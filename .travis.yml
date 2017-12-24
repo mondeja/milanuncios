@@ -24,7 +24,7 @@ before_script:
 
 
 script:
-  - python test/test.py
+  - sudo python test/test.py
 
 branches:
   only:
