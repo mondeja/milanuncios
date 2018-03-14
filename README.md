@@ -1,5 +1,7 @@
 # milanuncios
 
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/mondeja/milanuncios/master?filepath=docs%2Fusage%2Fenglish.ipynb)
+
 ### Python3 web scraper and automatic ad renovator for [milanuncios.com](https.//www.milanuncios.com).
 ### Scraper y autorenovador de anuncios para [milanuncios.com](https.//www.milanuncios.com) en Python3.
 
@@ -29,8 +31,8 @@ python3 setup.py install
 #### [Install on RaspberryPi](https://github.com/mondeja/milanuncios/tree/master/docs/install/raspberrypi.md)
 
 ## Usage
-- [Usage](https://github.com/mondeja/milanuncios/tree/master/docs/usage/english.ipynb) (English version)
-- [Uso](https://github.com/mondeja/milanuncios/tree/master/docs/usage/spanish.ipynb) (Versión en español)
+- [Usage](https://mybinder.org/v2/gh/mondeja/milanuncios/master?filepath=docs%2Fusage%2Fenglish.ipynb) (english version)
+- [Uso](https://mybinder.org/v2/gh/mondeja/milanuncios/master?filepath=docs%2Fusage%2Fspanish.ipynb) (versión en español)
 
 ## Contribute
 
